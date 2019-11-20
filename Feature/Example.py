@@ -5,9 +5,9 @@ import FaceDetection.Face as FD
 from PIL import Image, ImageDraw
 
 
+# img = Image.open('./Images/data/farm1.staticflickr.com&2&2999787_a1cf5e862d_z.jpg')
+img = Image.open('./Images/data/farm1.staticflickr.com&10&16513748_f04bc4ec23_b.jpg')
 
-
-img = Image.open('./Images/data/farm1.staticflickr.com&2&2999787_a1cf5e862d_z.jpg')
 croped = FD.crop_face(img)
 for i in croped:
     i.resize((224,224)).show()
