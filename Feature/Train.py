@@ -1,6 +1,8 @@
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import numpy as np
+import random
 from torchvision import datasets, transforms
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.autograd import Variable
@@ -8,6 +10,7 @@ import gc
 from tqdm import tqdm
 
 from inception_resnet_v1 import *
+from Utils import *
 
 
 class DNNTrain(object):
@@ -19,18 +22,25 @@ class DNNTrain(object):
 
 
     def train(self, loader, num_epoch):
-        self.network.train()
         epoch = 0
         last_loss = 100
         for _ in range(num_epoch):
             epoch +=1
             print('epoch:', epoch)
             gc.collect()
-            self.train_epoch(loader['train'], loader['validation'])
+            valid_loss = self.train_epoch(loader['train'], loader['validation'])
+            if last_loss >= valid_loss:
+                torch.save(self.network, './SavedModel/test.pth')
+            else:
+                continue
+
     
     def train_epoch(self, train_loader, valid_loader):
+        self.network.train()
         total_loss = 0.0
         for i, (images, labels) in enumerate(tqdm(train_loader)):
+            
+            # labels = make_one_hot(labels)
             images = Variable(images)
             labels = Variable(labels)
             if torch.cuda.is_available():
@@ -42,45 +52,49 @@ class DNNTrain(object):
             loss = self.criterion(predictions, labels)
             loss.backward()
             self.optimizer.step()
-            total_loss += loss.item()
-            
+            total_loss += loss.item() 
         print('Train loss=', total_loss/i)
             
-        valid_loss = 0.0
-        for i, (images, labels) in enumerate(valid_loader):
-            images = Variable(images)
-            labels = Variable(labels)
-            if torch.cuda.is_available():
-                images = images.cuda()
-                labels = labels.cuda()
-                self.network.cuda()
-            predictions = self.network(images)
-            loss = self.criterion(predictions, labels)
-            valid_loss += loss.item()
-            break
-        
-        
-#         valid_loss /= i
-        acc = get_acc(self.network, valid_loader)
-        print('Validation accuracy = ', acc, 'Validation loss = ', valid_loss)
+        with torch.no_grad():
+            self.network.eval()
+            valid_loss = 0.0
+            valid_acc = 0.0
+            for i, (images, labels) in enumerate(valid_loader):
+                images_Var = Variable(images)
+                labels_Var = Variable(labels)
+                if torch.cuda.is_available():
+                    images_Var = images_Var.cuda()
+                    labels_Var = labels_Var.cuda()
+                    self.network.cuda()
+                predictions = self.network(images_Var)
+                loss = self.criterion(predictions, labels_Var)
+                valid_loss += loss.item()
+                
+                predict_lable = np.argmax(predictions.cpu().numpy(), axis = 1)
+                valid_acc += sum(predict_lable == labels.numpy())/len(predict_lable)
+            valid_loss /= len(valid_loader) 
+            valid_acc /= len(valid_loader)
+            print('Validation accuracy = ', valid_acc, 'Validation loss = ', valid_loss)
+        return valid_loss
 
 
 
 
-path = './Images'
-transform = transforms.Compose([transforms.Resize(160), transforms.ToTensor()])
-data_image = {x:datasets.ImageFolder(root = os.path.join(path,x), transform = transform) for x in ['train', 'test']}
-index = list(range(len(data_image['train'])))
+if __name__ == "__main__":
+    path = './Images'
+    transform = transforms.Compose([transforms.Resize(160), transforms.ToTensor()])
+    data_image = {x:datasets.ImageFolder(root = os.path.join(path,x), transform = transform) for x in ['train', 'test']}
 
-                    
-train_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[2000:]))
-valid_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[:2000]))
-test_loader = torch.utils.data.DataLoader(data_image['test'], batch_size=100, shuffle=True)
+    index = list(range(len(data_image['train'])))    
+    random.shuffle(index)           
+    train_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[2000:]))
+    valid_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[:2000]))
+    test_loader = torch.utils.data.DataLoader(data_image['test'], batch_size=100, shuffle=True)
+    data_loader = {'train': train_loader, 'validation': valid_loader, 'test': train_loader}
 
-data_loader = {'train': train_loader, 'validation': valid_loader, 'test': train_loader}
+    model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=4, dropout_prob=0.6)
+    # model = torch.load('./SavedModel/test.pth')
+    print(model)
 
-model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=7, dropout_prob=0.6)
-print(model)
-
-trainer = DNNTrain(model, 1e-4)
-trainer.train(data_loader,3)
+    trainer = DNNTrain(model, 1e-4)
+    trainer.train(data_loader, 50)

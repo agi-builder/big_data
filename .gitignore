@@ -106,5 +106,10 @@ venv.bak/
 .DS_Store
 .vscode
 
+# trained model
+SavedModel/
+
 # dataset
-Images/
+Images7c/
+Images3c/
+Images4c/
