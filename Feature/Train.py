@@ -31,7 +31,7 @@ class DNNTrain(object):
             gc.collect()
             valid_loss = self.train_epoch(loader['train'], loader['validation'])
             if last_loss >= valid_loss:
-                torch.save(self.network, './SavedModel/test.pth')
+                torch.save(self.network, './SavedModel/test_team.pth')
             else:
                 continue
 
@@ -91,7 +91,7 @@ class DNNTrain(object):
 
 
 if __name__ == "__main__":
-    path = './Images4c'
+    path = './Data/Team'
     transform = transforms.Compose([transforms.Resize(160), transforms.ToTensor()])
     data_image = {x:datasets.ImageFolder(root = os.path.join(path,x), transform = transform) for x in ['train', 'test']}
 

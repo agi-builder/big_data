@@ -5,13 +5,14 @@ from facenet_pytorch import MTCNN
 import torch
 import numpy as np
 import cv2
+import glob
 from PIL import Image, ImageDraw
 from IPython import display
 
 from inception_resnet_v1 import *
 
 def camera_preprocess(img):
-    img = img.convert('LA').convert('RGB').resize((48,48)).resize((160,160))
+    img = img.convert('LA').convert('RGB').resize((48,48))
     img = torch.tensor([np.rollaxis(np.array(img)/255, 2, 0)]).float()
     return img
 
@@ -23,8 +24,6 @@ def main():
     mtcnn = MTCNN(keep_all=True, device=device)
 
     cv2.namedWindow("croped")
-    cv2.namedWindow("whole")
-
     vc = cv2.VideoCapture(0)
 
     if vc.isOpened(): # try to get the first frame
@@ -32,6 +31,16 @@ def main():
     else:
         rval = False
         
+    savePath = './Data/Team/sad/'
+
+    
+    list_of_files = glob.glob(savePath + '*')
+    if len(list_of_files):
+        latest_file = max(list_of_files, key=os.path.getctime)
+        i = int(latest_file[:-4].replace(savePath, ''))+1
+    else:
+        i = 0
+
     while rval:
         boxes, _ = mtcnn.detect(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
         frame_draw = Image.fromarray(cv2.cvtColor(frame.copy(), cv2.COLOR_BGR2RGB))
@@ -43,27 +52,10 @@ def main():
             croped = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).crop(boxes[0])
             input_frame = camera_preprocess(croped)
 
-            cv2.imshow("croped",  np.rollaxis(input_frame[0].numpy(), 0, 3))
-
-            model = torch.load('./SavedModel/test_team.pth')
-            prediction = model.forward(input_frame.cuda()).cpu().detach().numpy()[0]
-            predict_lable = np.argmax(prediction)
-
-            print(prediction)
-
-            target = ['Angry','Happy','Neutral','Sad']
-
-            img =  np.array(frame_draw)[:, :, ::-1]
-            img = cv2.putText(img, 
-                            target[predict_lable]+': '+str(int(100*prediction[predict_lable]))+'%', 
-                            (int(boxes[0][0]),int(boxes[0][1]-3)), 
-                            cv2.FONT_HERSHEY_COMPLEX, 
-                            1, 
-                            (0,0,255), 
-                            2)
-
-
-        cv2.imshow("whole",img)
+            img = np.rollaxis(input_frame[0].numpy(), 0, 3)
+            cv2.imshow("croped",  img)
+            cv2.imwrite(savePath+str(i)+'.jpg',img*255)
+            i += 1
         rval, frame = vc.read()
         key = cv2.waitKey(20)
         if key == 27: # exit on ESC

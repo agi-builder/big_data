@@ -110,6 +110,4 @@ venv.bak/
 SavedModel/
 
 # dataset
-Images7c/
-Images3c/
-Images4c/
+Data/
