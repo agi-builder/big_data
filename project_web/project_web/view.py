@@ -28,8 +28,10 @@ class Inference(object):
         self.model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=4, dropout_prob=0.6)
         self.model.load_state_dict(torch.load('./static/SavedModel/dict.pth'))
         self.model.eval()
-        if self.device != 'cpu':
+        if torch.cuda.is_available():
             self.model.cuda()
+        else:
+            self.model.cpu()
     
 
     def predict(self, frame):
@@ -42,7 +44,7 @@ class Inference(object):
 
             croped = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).crop(boxes[0])
             input_frame = camera_preprocess(croped)
-            if self.device != 'cpu':
+            if torch.cuda.is_available():
                 input_frame = input_frame.cuda()
             
             prediction = self.model.forward(input_frame).cpu().detach().numpy()[0]
@@ -51,15 +53,15 @@ class Inference(object):
 
             target = ['Angry','Happy','Neutral','Confused']
 
-            img =  np.array(frame_draw)[:, :, ::-1]
-            img = cv2.putText(img, 
+            frame =  np.array(frame_draw)[:, :, ::-1]
+            frame = cv2.putText(frame, 
                             target[predict_lable]+': '+str(int(100*prediction[predict_lable]))+'%', 
                             (int(boxes[0][0]),int(boxes[0][1]-3)), 
                             cv2.FONT_HERSHEY_COMPLEX, 
                             1, 
                             (0,0,255), 
                             2)
-        return img
+        return frame
 
 
 
