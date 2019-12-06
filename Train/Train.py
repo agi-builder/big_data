@@ -40,17 +40,6 @@ class DNNTrain(object):
         self.network.train()
         total_loss = 0.0
         for i, (images, labels) in enumerate(tqdm(train_loader)):
-            
-            # print(images[0].numpy())
-            # print(images.shape)
-            # frame = np.rollaxis(images[0].numpy(), 0, 3)
-            # cv2.namedWindow("croped")
-            # cv2.imshow("croped", frame)
-            # key = cv2.waitKey(20)
-            # if key == 27: # exit on ESC
-            #     break
-
-            # labels = make_one_hot(labels)
             images = Variable(images)
             labels = Variable(labels)
             if torch.cuda.is_available():
