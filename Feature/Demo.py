@@ -45,7 +45,9 @@ def main():
 
             cv2.imshow("croped",  np.rollaxis(input_frame[0].numpy(), 0, 3))
 
-            model = torch.load('./SavedModel/test_team.pth')
+
+            model = torch.load('./SavedModel/test.pth')
+            
             prediction = model.forward(input_frame.cuda()).cpu().detach().numpy()[0]
             predict_lable = np.argmax(prediction)
 
