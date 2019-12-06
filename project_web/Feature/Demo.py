@@ -26,6 +26,7 @@ def main():
     cv2.namedWindow("whole")
 
     vc = cv2.VideoCapture(0)
+    model = torch.load('~/big_data/project_web/static/SavedModel/test.pth').cuda().eval()
 
     if vc.isOpened(): # try to get the first frame
         rval, frame = vc.read()
@@ -45,13 +46,13 @@ def main():
 
             cv2.imshow("croped",  np.rollaxis(input_frame[0].numpy(), 0, 3))
 
-            model = torch.load('./SavedModel/test_team.pth')
+            
             prediction = model.forward(input_frame.cuda()).cpu().detach().numpy()[0]
             predict_lable = np.argmax(prediction)
 
             print(prediction)
 
-            target = ['Angry','Happy','Neutral','Sad']
+            target = ['Angry','Happy','Neutral','Confused']
 
             img =  np.array(frame_draw)[:, :, ::-1]
             img = cv2.putText(img, 

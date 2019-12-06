@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Face Recognition and Recommendation</title>
+    <link rel="stylesheet" href="{% static "css/identify.css" %}">
+
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="{% static "js/identify.js" %}"></script>
+    <script src="{% static "js/webcam.js" %}"></script>
+
+</head>
+<body>
+    <div id="results"> <h2>Your captured image will appear here...</h2> </div>
+    <div id="results-2"></div>
+    <div id="response"></div>
+
+    <h1> Get Your Entertainment Recommendations </h1>
+    <h1> Based on Your Selfie! </h1>
+    <div id="my_camera" style="width:320px; height:240px;"></div>
+
+    <script language="JavaScript">
+        Webcam.set({
+            width: 320,
+            height: 240,
+            image_format: 'jpeg',
+            jpeg_quality: 90
+        });
+        Webcam.attach( '#my_camera' );
+    </script>
+
+
+    <form>
+		<input type=button value="Take Snapshot" onClick="take_snapshot(); clearInterval(img_interval)">
+    </form>
+    <form>
+            <input type=button value="Start" onClick="img_interval = setInterval(take_snapshot, 1000);">
+    </form>
+    
+
+    
+    <script language="JavaScript">
+        function sleep (time) {
+                return new Promise((resolve) => setTimeout(resolve, time));
+        }
+
+        function take_snapshot() {
+            // take snapshot and get image data
+            Webcam.snap( function(data_uri) {
+            
+
+            console.log("Finished Snap");
+            
+            Webcam.upload(data_uri, "recommend", function(code, text) {
+                // document.getElementById('response').innerHTML = 
+                // '<h2>' + code + '</h2>';
+                
+            })
+
+            console.log("Finished Upload");
+
+            sleep(500).then(() => {
+                // display results in page
+                var randVar = Math.random();
+                document.getElementById('results').innerHTML = 
+                '<h2>Here is your image:</h2>' + 
+                '<img src="'+data_uri+'"/>' +
+                '<h2>Here is result:</h2>' + 
+                '<img src="{% static "img/real_time.png" %}?' + randVar +  '">';
+            
+
+            });
+            
+            })
+
+        }
+
+        var img_interval;
+    </script>
+
+    <!-- <div id="picture" style="width: 1000px; height: 600px;">
+            <img src="{% static "img/real_time.png" %}">
+    </div> -->
+        
+</body>
+</html>
