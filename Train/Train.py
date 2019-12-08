@@ -40,17 +40,6 @@ class DNNTrain(object):
         self.network.train()
         total_loss = 0.0
         for i, (images, labels) in enumerate(tqdm(train_loader)):
-            
-            # print(images[0].numpy())
-            # print(images.shape)
-            # frame = np.rollaxis(images[0].numpy(), 0, 3)
-            # cv2.namedWindow("croped")
-            # cv2.imshow("croped", frame)
-            # key = cv2.waitKey(20)
-            # if key == 27: # exit on ESC
-            #     break
-
-            # labels = make_one_hot(labels)
             images = Variable(images)
             labels = Variable(labels)
             if torch.cuda.is_available():
@@ -102,7 +91,7 @@ if __name__ == "__main__":
     test_loader = torch.utils.data.DataLoader(data_image['test'], batch_size=100, shuffle=True)
     data_loader = {'train': train_loader, 'validation': valid_loader, 'test': train_loader}
 
-    # model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=4, dropout_prob=0.6)
+    model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=4, dropout_prob=0.6)
     model = torch.load('./SavedModel/test.pth')
     print(model)
 
