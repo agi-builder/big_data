@@ -28,14 +28,18 @@
             jpeg_quality: 90
         });
         Webcam.attach( '#my_camera' );
+        var img_interval;
     </script>
 
 
     <form>
-		<input type=button value="Take Snapshot" onClick="take_snapshot(); clearInterval(img_interval)">
+		<input type=button value="Take Snapshot" onClick="clearInterval(img_interval); take_snapshot();">
     </form>
     <form>
-            <input type=button value="Start" onClick="img_interval = setInterval(take_snapshot, 1000);">
+        <input type=button value="Start" onClick="img_interval = setInterval(take_snapshot, 800);">
+    </form>
+    <form>
+        <input type=button value="Stop" onClick="clearInterval(img_interval);">
     </form>
     
 
@@ -60,7 +64,7 @@
 
             console.log("Finished Upload");
 
-            sleep(500).then(() => {
+            sleep(800).then(() => {
                 // display results in page
                 var randVar = Math.random();
                 document.getElementById('results').innerHTML = 
@@ -76,7 +80,7 @@
 
         }
 
-        var img_interval;
+        
     </script>
 
     <!-- <div id="picture" style="width: 1000px; height: 600px;">

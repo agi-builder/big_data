@@ -91,7 +91,7 @@ if __name__ == "__main__":
     test_loader = torch.utils.data.DataLoader(data_image['test'], batch_size=100, shuffle=True)
     data_loader = {'train': train_loader, 'validation': valid_loader, 'test': train_loader}
 
-    # model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=4, dropout_prob=0.6)
+    model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=4, dropout_prob=0.6)
     model = torch.load('./SavedModel/test.pth')
     print(model)
 
