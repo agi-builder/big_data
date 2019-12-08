@@ -291,7 +291,7 @@ class InceptionResnetV1(nn.Module):
         x = F.normalize(x, p=2, dim=1)
         if self.classify:
             x = self.logits(x)
-            x = F.softmax(x, dim=1)
+            # x = F.softmax(x, dim=1)
         return x
 
 

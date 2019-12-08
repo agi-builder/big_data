@@ -6,6 +6,8 @@ import random
 from torchvision import datasets, transforms
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.autograd import Variable
+from torch.utils import data
+from torch.nn.modules.distance import PairwiseDistance
 import gc
 from tqdm import tqdm
 import cv2
@@ -13,13 +15,16 @@ import cv2
 from inception_resnet_v1 import *
 from Utils import *
 
+import datas
+
 
 class DNNTrain(object):
     def __init__(self, network, learning_rate):
         self.network = network
         self.learning_rate = learning_rate
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=self.learning_rate)
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.TripletMarginLoss(margin=0.2)
+        self.l2_dist = PairwiseDistance(2)
 
 
     def train(self, loader, num_epoch):
@@ -29,71 +34,114 @@ class DNNTrain(object):
             epoch +=1
             print('epoch:', epoch)
             gc.collect()
-            valid_loss = self.train_epoch(loader['train'], loader['validation'])
+            valid_loss = self.train_epoch(loader['train'], loader['test'])
             if last_loss >= valid_loss:
                 torch.save(self.network, './SavedModel/test_team.pth')
             else:
                 continue
 
     
-    def train_epoch(self, train_loader, valid_loader):
+    def train_epoch(self, train_loader, test_loader):
         self.network.train()
-        total_loss = 0.0
-        for i, (images, labels) in enumerate(tqdm(train_loader)):
-            images = Variable(images)
-            labels = Variable(labels)
+        labels, distances = [], []
+        triplet_loss_sum = 0.0
+        for i, (anc, pos, neg) in enumerate(tqdm(train_loader)):
             if torch.cuda.is_available():
-                images = images.cuda()
-                labels = labels.cuda()
+                anc, pos, neg = anc.cuda(), pos.cuda(), neg.cuda()
                 self.network.cuda()
             self.optimizer.zero_grad()
-            predictions = self.network(images)
-            loss = self.criterion(predictions, labels)
+            anc, pos, neg = Variable(anc), Variable(pos), Variable(neg)
+            anc_fea = self.network(anc)
+            pos_fea = self.network(pos)
+            neg_fea = self.network(neg)
+
+            loss = self.criterion(anc_fea, pos_fea, neg_fea)
             loss.backward()
             self.optimizer.step()
-            total_loss += loss.item() 
-        print('Train loss=', total_loss/i)
+
+            dists = self.l2_dist.forward(anc_fea, pos_fea)
+            distances.append(dists.data.cpu().numpy())
+            labels.append(np.ones(dists.size(0)))
+
+            dists = self.l2_dist.forward(anc_fea, neg_fea)
+            distances.append(dists.data.cpu().numpy())
+            labels.append(np.zeros(dists.size(0)))
+            triplet_loss_sum += loss.item()
+
+
+        avg_triplet_loss = triplet_loss_sum / trainset.__len__()
+        labels = np.array([sublabel for label in labels for sublabel in label])
+        distances = np.array([subdist for dist in distances for subdist in dist])
+        print(labels)
+        print(distances)
+        tpr, fpr, accuracy, val, val_std, far = evaluate(distances, labels)
+        print('  train set - Triplet Loss       = {:.8f}'.format(avg_triplet_loss))
+        print('  train set - Accuracy           = {:.8f}'.format(np.mean(accuracy)))
             
         with torch.no_grad():
             self.network.eval()
-            valid_loss = 0.0
-            valid_acc = 0.0
-            for i, (images, labels) in enumerate(valid_loader):
-                images_Var = Variable(images)
-                labels_Var = Variable(labels)
+            labels, distances = [], []
+            triplet_loss_sum = 0.0
+            for i, (anc, pos, neg) in enumerate(tqdm(train_loader)):
                 if torch.cuda.is_available():
-                    images_Var = images_Var.cuda()
-                    labels_Var = labels_Var.cuda()
+                    anc, pos, neg = anc.cuda(), pos.cuda(), neg.cuda()
                     self.network.cuda()
-                predictions = self.network(images_Var)
-                loss = self.criterion(predictions, labels_Var)
-                valid_loss += loss.item()
-                
-                predict_lable = np.argmax(predictions.cpu().numpy(), axis = 1)
-                valid_acc += sum(predict_lable == labels.numpy())/len(predict_lable)
-            valid_loss /= len(valid_loader) 
-            valid_acc /= len(valid_loader)
-            print('Validation accuracy = ', valid_acc, 'Validation loss = ', valid_loss)
-        return valid_loss
+                anc, pos, neg = Variable(anc), Variable(pos), Variable(neg)
+                anc_fea = self.network(anc)
+                pos_fea = self.network(pos)
+                neg_fea = self.network(neg)
 
+                loss = criterion(anc_fea, pos_fea, neg_fea)
+
+                dists = self.l2_dist.forward(anc_fea, pos_fea)
+                distances.append(dists.data.cpu().numpy())
+                labels.append(np.ones(dists.size(0)))
+
+                dists = self.l2_dist.forward(anc_fea, neg_fea)
+                distances.append(dists.data.cpu().numpy())
+                labels.append(np.zeros(dists.size(0)))
+                triplet_loss_sum += loss.item()
+
+
+            avg_triplet_loss = triplet_loss_sum / trainset.__len__()
+            labels = np.array([sublabel for label in labels for sublabel in label])
+            distances = np.array([subdist for dist in distances for subdist in dist])
+            print(labels)
+            print(distances)
+            tpr, fpr, accuracy, val, val_std, far = evaluate(distances, labels)
+            print('  test set - Triplet Loss       = {:.8f}'.format(avg_triplet_loss))
+            print('  test set - Accuracy           = {:.8f}'.format(np.mean(accuracy)))
+            return avg_triplet_loss
 
 
 
 if __name__ == "__main__":
     path = './Data/Team'
-    transform = transforms.Compose([transforms.Resize(160), transforms.ToTensor()])
-    data_image = {x:datasets.ImageFolder(root = os.path.join(path,x), transform = transform) for x in ['train', 'test']}
+    # transform = transforms.Compose([transforms.Resize(160), transforms.ToTensor()])
+    # data_image = {x:datasets.ImageFolder(root = os.path.join(path,x), transform = transform) for x in ['train', 'test']}
 
-    index = list(range(len(data_image['train'])))    
-    random.shuffle(index)           
-    train_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[2000:]))
-    valid_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[:2000]))
-    test_loader = torch.utils.data.DataLoader(data_image['test'], batch_size=100, shuffle=True)
-    data_loader = {'train': train_loader, 'validation': valid_loader, 'test': train_loader}
+    # index = list(range(len(data_image['train'])))    
+    # random.shuffle(index)           
+    # train_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[2000:]))
+    # valid_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[:2000]))
+    # test_loader = torch.utils.data.DataLoader(data_image['test'], batch_size=100, shuffle=True)
+    
 
-    model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=4, dropout_prob=0.6)
-    model = torch.load('./SavedModel/test.pth')
-    print(model)
+
+    transform = transforms.Compose([
+    transforms.Resize((160, 160)),
+    transforms.ToTensor()])
+
+    trainset = datas.fec_data.FecData(transform)
+    testset = datas.fec_data.FecTestData(transform)
+    trainloader = data.DataLoader(trainset, batch_size=24, num_workers=16)
+    testloader = data.DataLoader(testset, batch_size=20, num_workers=16)
+
+    data_loader = {'train': trainloader, 'test': testloader}
+
+    model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=16, dropout_prob=0.6)
+    # model = torch.load('./SavedModel/test.pth')
+    # print(model)
 
     trainer = DNNTrain(model, 1e-4)
     trainer.train(data_loader, 50)
