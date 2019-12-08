@@ -18,6 +18,9 @@ from Feature.inception_resnet_v1 import *
 import requests as req
 import datetime
 
+global emotion_result
+emotion_result = 0
+
 def camera_preprocess(img):
         img = img.convert('LA').convert('RGB').resize((48,48)).resize((160,160))
         img = torch.tensor([np.rollaxis(np.array(img)/255, 2, 0)]).float()
@@ -37,6 +40,7 @@ class Inference(object):
     
 
     def predict(self, frame):
+        global emotion_result
         boxes, _ = self.mtcnn.detect(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
         frame_draw = Image.fromarray(cv2.cvtColor(frame.copy(), cv2.COLOR_BGR2RGB))
         if boxes is not None:
@@ -52,6 +56,8 @@ class Inference(object):
             prediction = self.model.forward(input_frame).cpu().detach().numpy()[0]
             predict_lable = np.argmax(prediction)
 
+            emotion_result = predict_lable
+
 
             target = ['Angry','Happy','Neutral','Confused']
 
@@ -64,7 +70,6 @@ class Inference(object):
                             (0,0,255), 
                             2)
         return frame
-
 
 
 
@@ -84,10 +89,11 @@ def get_location():
     return str(latitude) + ',' + str(longitude)
 
 emotions = ['Happy', 'Angry', 'Neutral', 'Confused']
-search_url = 'https://www.googleapis.com/youtube/v3/search'
+search_url = 'https://www.googleapiconda install tensorflow-gpus.com/youtube/v3/search'
 DEVELOPER_KEY = 'AIzaSyAsXAqlyERs0eRcsk8NI-NghBIRRbLv4Bo'
 @csrf_exempt
 def goData(request):
+    global emotion_result
     links = [
         {
             'Name': 'HAPPY Music - Good Morning Ukulele Music - The Best SUMMER Music',
@@ -108,7 +114,7 @@ def goData(request):
     ]
 
     current_date = datetime.datetime.now() 
-    to_search = np.random.choice(emotions)
+    to_search = emotions[emotion_result]
     print(to_search)
     search_params = {
             'part': 'snippet',
