@@ -1,9 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django.http import HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
-
-
+from django.views import generic
 
 from facenet_pytorch import MTCNN
 import torch
@@ -11,10 +11,12 @@ import numpy as np
 import cv2
 from PIL import Image, ImageDraw
 from IPython import display
-
+import json
 import time
 import os
 from Feature.inception_resnet_v1 import *
+import requests as req
+import datetime
 
 def camera_preprocess(img):
         img = img.convert('LA').convert('RGB').resize((48,48)).resize((160,160))
@@ -26,7 +28,7 @@ class Inference(object):
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.mtcnn = MTCNN(keep_all=True, device=self.device)
         self.model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=4, dropout_prob=0.6)
-        self.model.load_state_dict(torch.load('./static/SavedModel/dict.pth'))
+        self.model.load_state_dict(torch.load('./static/SavedModel/dict.pth', map_location=torch.device('cpu')))
         self.model.eval()
         if torch.cuda.is_available():
             self.model.cuda()
@@ -67,34 +69,73 @@ class Inference(object):
 
 
 
-
 def hello(request):
     context = {}
     context['content1'] = 'Hello World'
     return render(request, 'helloworld.html', context)
 
+
+def get_location():
+    url_loc = "https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyA24afb5VJ2UD1Y0sdfvJU2oouGaWzjnAE"
+    r = req.post(url = url_loc, json = {"key":"value"}) 
+    location = r.json()
+    latitude = location['location']['lat'] 
+    longitude = location['location']['lng']
+    return str(latitude) + ',' + str(longitude)
+
+emotions = ['Happy', 'Angry', 'Neutral', 'Confused']
+search_url = 'https://www.googleapis.com/youtube/v3/search'
+DEVELOPER_KEY = 'AIzaSyAsXAqlyERs0eRcsk8NI-NghBIRRbLv4Bo'
 @csrf_exempt
-def identify(request):
-    i = 0
-    if request.method == 'POST' and request.FILES['img']:
-        myfile = request.FILES['img']
-        print(request)
-        print(myfile)
-        print("file type: ", type(myfile))
-        im = Image.open(myfile)
-        im.save("./static/img/real_time.png")
-        i += 1
+def goData(request):
+    links = [
+        {
+            'Name': 'HAPPY Music - Good Morning Ukulele Music - The Best SUMMER Music',
+            'URL': 'https://www.youtube.com/watch?v=NvZtkt9973A'
+        },
+        {
+            'Name': 'Sad Piano Music (THIS WILL MAKE YOU CRY / Saddest Piano & Violin Ever!)',
+            'URL': 'https://www.youtube.com/watch?v=aWIE0PX1uXk'
+        },
+        {
+            'Name': 'Emotions Series - Anger | Most Epic Angry Dark Music Mix',
+            'URL': 'https://www.youtube.com/watch?v=1qKS51qh4OY'
+        },
+        {
+            'Name': 'Instrumental Music - Confused',
+            'URL': 'https://www.youtube.com/watch?v=IDzP4O6ZDvs'
+        }
+    ]
 
+    current_date = datetime.datetime.now() 
+    to_search = np.random.choice(emotions)
+    print(to_search)
+    search_params = {
+            'part': 'snippet',
+            'q': to_search,
+            'key': DEVELOPER_KEY,
+            'maxResults': 10,
+            'type': 'video'
+    }
 
+    r = requests.get(search_url, params=search_params)
+    try:
+        results = r.json()['items']
 
+        videos = []
+        for search_result in results:
+            videos.append({'Name': search_result['snippet']['title'], 'URL': 'https://www.youtube.com/watch?v=' + search_result['id']['videoId']})
 
-    context = {}
-    context['content'] = request.method
-    context['files'] = i
-    return render(request, 'identify.html', context)
+        print("Video No: ", len(videos))
+        if len(videos) != 0:
+            links = np.random.choice(videos, 5)
+    except:
+        pass
 
+    return JsonResponse(list(links), safe=False)
+    
 @csrf_exempt
-def recommend(request):
+def dealImage(request):
     inference = Inference()
     start = time.time()
 
@@ -102,6 +143,45 @@ def recommend(request):
     context['content'] = request.method
 
     print('Enter to Recommend Page')
+    print(request.FILES)
+
+    if request.method == 'POST' and request.FILES:
+        file_name = list(request.FILES.keys())[0]
+        myfile = request.FILES[file_name]
+        print("File anme: ", myfile)
+        print("File type: ", type(myfile))
+
+
+        
+        im = Image.open(myfile)
+        im = cv2.cvtColor(np.asarray(im), cv2.COLOR_RGB2BGR)
+        im = inference.predict(im)
+
+
+        cv2.imwrite("./static/img/send.png", im)
+
+        im = Image.open("./static/img/send.png")
+
+        print('Saved Upload Picture')
+
+        print(time.time() - start)
+        return HttpResponse(im, content_type="image/jepg")
+
+
+
+    print(time.time() - start)
+    return render(request, 'recommend.html', context)
+
+@csrf_exempt
+def identify(request):
+    inference = Inference()
+    start = time.time()
+
+    context = {}
+    context['content'] = request.method
+
+    print('Enter to Recommend Page')
+    print(request.FILES)
 
     if request.method == 'POST' and request.FILES:
         file_name = list(request.FILES.keys())[0]
@@ -114,12 +194,50 @@ def recommend(request):
         except:
             pass
 
+        
         im = Image.open(myfile)
         im = cv2.cvtColor(np.asarray(im), cv2.COLOR_RGB2BGR)
         im = inference.predict(im)
 
 
-        cv2.imwrite("./static/img/real_time.png",im)
+        cv2.imwrite("./static/img/real_time.png", im)
+
+        print('Saved Upload Picture')
+
+
+
+    print(time.time() - start)
+    return render(request, 'identify.html', context)
+
+@csrf_exempt
+def recommend(request):
+    inference = Inference()
+    start = time.time()
+
+    context = {}
+    context['content'] = request.method
+
+    print('Enter to Recommend Page')
+    print(request.FILES)
+
+    if request.method == 'POST' and request.FILES:
+        file_name = list(request.FILES.keys())[0]
+        myfile = request.FILES[file_name]
+        print("File anme: ", myfile)
+        print("File type: ", type(myfile))
+
+        try:
+            os.remove('./static/img/real_time.png')
+        except:
+            pass
+
+        
+        im = Image.open(myfile)
+        im = cv2.cvtColor(np.asarray(im), cv2.COLOR_RGB2BGR)
+        im = inference.predict(im)
+
+
+        cv2.imwrite("./static/img/real_time.png", im)
 
         print('Saved Upload Picture')
 
@@ -127,3 +245,9 @@ def recommend(request):
 
     print(time.time() - start)
     return render(request, 'recommend.html', context)
+
+@csrf_exempt
+def getRecommend(request):
+    context = {}
+    context['content1'] = 'Hello World'
+    return render(request, 'getRecommend.html', context)
