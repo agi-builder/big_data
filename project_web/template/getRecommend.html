@@ -176,7 +176,7 @@
           style="opacity: 1; transform: scaleX(1) scaleY(1) scaleZ(1); transition: opacity 700ms ease 0s, transform 700ms ease 0s;">
           <div class="w-clearfix">
             <div style="cursor: pointer;"
-              onClick="clearInterval(img_interval); take_snapshot(); loadDoc('/goData/', myFunction);"
+              onClick="clearInterval(img_interval); take_snapshot();"
               class="social-block w-inline-block">
               <span class="function-link nav-link">Take Snapshot</span>
             </div>
@@ -184,7 +184,7 @@
               class="facebook social-block w-inline-block">
               <span class="function-link nav-link">Start Video</span>
             </div>
-            <div style="cursor: pointer;" onClick="clearInterval(img_interval); loadDoc('/goData/', myFunction);"
+            <div style="cursor: pointer;" onClick="clearInterval(img_interval);"
               class="pinterest social-block w-inline-block">
               <span class="function-link nav-link">Stop Video</span>
             </div>
@@ -351,6 +351,8 @@
             // '<h2>Here is result:</h2>' +
             '<img style="width: 100%; height: 100%" src="{% static "img/real_time.png" %}?' + randVar + '" alt = "" onerror="imgError(this)">';
           // alt = "" onerror="imgError(this);
+
+          sleep(1000).then(() => {loadDoc('/goData/', myFunction);});
         });
 
       })
