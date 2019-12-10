@@ -3,7 +3,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import random
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms, models
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.autograd import Variable
 from torch.utils import data
@@ -41,7 +41,7 @@ class DNNTrain(object):
             valid_loss = self.train_epoch(loader['train'], loader['test'])
             if last_loss > valid_loss:
                 # torch.save(self.network, './SavedModel/triplet.pth')
-                torch.save(self.network.state_dict(), './SavedModel/triplet2.pth')
+                torch.save(self.network.state_dict(), './SavedModel/triplet3.pth')
                 last_loss = valid_loss
             else:
                 continue
@@ -135,8 +135,11 @@ if __name__ == "__main__":
 
     data_loader = {'train': trainloader, 'test': testloader}
 
-    model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=16, dropout_prob=0.6)
-    model.load_state_dict(torch.load('./SavedModel/triplet2.pth'))
+    # model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=16, dropout_prob=0.6)
+    # model.load_state_dict(torch.load('./SavedModel/triplet2.pth'))
+    model = models.densenet121(pretrained=True)
+    print(model)
+    model.classifier = nn.Linear(model.classifier.in_features, 16)
 
     trainer = DNNTrain(model, 1e-4)
     trainer.train(data_loader, 50)\
