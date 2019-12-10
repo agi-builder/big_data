@@ -41,7 +41,7 @@ class DNNTrain(object):
             valid_loss = self.train_epoch(loader['train'], loader['test'])
             if last_loss > valid_loss:
                 # torch.save(self.network, './SavedModel/triplet.pth')
-                torch.save(self.network.state_dict(), './SavedModel/triplet3.pth')
+                torch.save(self.network.state_dict(), './SavedModel/triplet_dense.pth')
                 last_loss = valid_loss
             else:
                 continue
@@ -131,15 +131,15 @@ if __name__ == "__main__":
     trainset = datas.fec_data.FecData(transform)
     testset = datas.fec_data.FecTestData(transform)
     trainloader = data.DataLoader(trainset, batch_size=24, num_workers=16)
-    testloader = data.DataLoader(testset, batch_size=20, num_workers=16)
+    testloader = data.DataLoader(testset, batch_size=30, num_workers=16)
 
     data_loader = {'train': trainloader, 'test': testloader}
 
     # model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=16, dropout_prob=0.6)
     # model.load_state_dict(torch.load('./SavedModel/triplet2.pth'))
     model = models.densenet121(pretrained=True)
-    print(model)
     model.classifier = nn.Linear(model.classifier.in_features, 16)
+    print(model)
 
     trainer = DNNTrain(model, 1e-4)
     trainer.train(data_loader, 50)\

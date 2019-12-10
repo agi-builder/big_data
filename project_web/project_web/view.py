@@ -18,13 +18,8 @@ from Feature.inception_resnet_v1 import *
 import requests as req
 import datetime
 
-<<<<<<< HEAD
 global emotion_label
 emotion_label = 0
-=======
-global emotion_result
-emotion_result = 0
->>>>>>> shahen
 
 def camera_preprocess(img):
         img = img.convert('LA').convert('RGB').resize((48,48)).resize((160,160))
@@ -45,11 +40,7 @@ class Inference(object):
     
 
     def predict(self, frame):
-<<<<<<< HEAD
         global emotion_label
-=======
-        global emotion_result
->>>>>>> shahen
         boxes, _ = self.mtcnn.detect(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
         frame_draw = Image.fromarray(cv2.cvtColor(frame.copy(), cv2.COLOR_BGR2RGB))
         if boxes is not None:
@@ -66,8 +57,6 @@ class Inference(object):
             predict_lable = np.argmax(prediction)
             emotion_label = predict_lable
 
-            emotion_result = predict_lable
-
 
             target = ['Angry','Happy','Neutral','Confused']
 
@@ -80,6 +69,7 @@ class Inference(object):
                             (0,0,255), 
                             2)
         return frame
+
 
 
 
@@ -98,7 +88,6 @@ def get_location():
     longitude = location['location']['lng']
     return str(latitude) + ',' + str(longitude)
 
-<<<<<<< HEAD
 emotions = ['Angry', 'Happy', 'Neutral', 'Confused']
 search_url = 'https://www.googleapis.com/youtube/v3/search'
 DEVELOPER_KEY = 'AIzaSyAsXAqlyERs0eRcsk8NI-NghBIRRbLv4Bo'
@@ -106,14 +95,6 @@ DEVELOPER_KEY = 'AIzaSyAsXAqlyERs0eRcsk8NI-NghBIRRbLv4Bo'
 def goData(request):
     global emotion_label
        
-=======
-emotions = ['Happy', 'Angry', 'Neutral', 'Confused']
-search_url = 'https://www.googleapiconda install tensorflow-gpus.com/youtube/v3/search'
-DEVELOPER_KEY = 'AIzaSyAsXAqlyERs0eRcsk8NI-NghBIRRbLv4Bo'
-@csrf_exempt
-def goData(request):
-    global emotion_result
->>>>>>> shahen
     links = [
         {
             'Name': 'HAPPY Music - Good Morning Ukulele Music - The Best SUMMER Music',
@@ -134,12 +115,8 @@ def goData(request):
     ]
 
     current_date = datetime.datetime.now() 
-<<<<<<< HEAD
     # to_search = np.random.choice(emotions)
     to_search = emotions[emotion_label]
-=======
-    to_search = emotions[emotion_result]
->>>>>>> shahen
     print(to_search)
     search_params = {
             'part': 'snippet',

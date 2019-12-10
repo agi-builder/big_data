@@ -233,7 +233,7 @@ blockquote {
 }
 
 .tile-image.hire {
-  background-image: url("http://uploads.webflow.com/566ded60394cebc21a1286aa/566ded60394cebc21a1286b5_camera-front.jpg");
+  background-image: url("https://i.ytimg.com/vi/5G9GOWlpP_0/maxresdefault.jpg");
 }
 
 .tile-processed {
@@ -283,7 +283,7 @@ blockquote {
   bottom: 120px;
   z-index: 20;
   color: #fff;
-  font-size: 10px;
+  font-size: 15px;
   line-height: 30px;
   font-weight: 900;
   letter-spacing: 2px;

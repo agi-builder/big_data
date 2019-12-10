@@ -18,7 +18,7 @@ def grade_mode(list):
 
 
 
-dataset = pd.read_csv('./Data/triplet/train.csv', names=list(range(31)))
+dataset = pd.read_csv('./Data/triplet/test.csv', names=list(range(31)))
 
 new_dataset = {}
 names1 = []
@@ -26,10 +26,10 @@ names2 = []
 names3 = []
 types = []
 modes = []
-for i in range(0,63000):
-    name1 = "/home/kevin/big_data/Data/triplet/cropped_160/" + dataset[0][i][7:].replace("/","&")
-    name2 = "/home/kevin/big_data/Data/triplet/cropped_160/" + dataset[5][i][7:].replace("/","&")
-    name3 = "/home/kevin/big_data/Data/triplet/cropped_160/" + dataset[10][i][7:].replace("/","&")
+for i in range(0,len(dataset)):
+    name1 = "/home/kevin/big_data/Data/triplet/cropped_160_test/" + dataset.iloc[i,0][7:].replace("/","&")
+    name2 = "/home/kevin/big_data/Data/triplet/cropped_160_test/" + dataset.iloc[i,5][7:].replace("/","&")
+    name3 = "/home/kevin/big_data/Data/triplet/cropped_160_test/" + dataset.iloc[i,10][7:].replace("/","&")
     if os.path.exists(name1) == False or os.path.exists(name2) \
             == False or os.path.exists(name3) == False:
         continue
@@ -63,4 +63,4 @@ new_data = pd.DataFrame(new_dataset)
 pprint(new_data)
 print("DataFrame's cols is {}".format(new_data.shape[0]))
 
-new_data.to_csv('./Data/triplet/pd_triplet_data.csv')
+new_data.to_csv('./Data/triplet/pd_triplet_data_test.csv')
