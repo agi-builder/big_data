@@ -11,9 +11,13 @@ from torch.nn.modules.distance import PairwiseDistance
 import gc
 from tqdm import tqdm
 import cv2
+# import time
+# from PIL import Image
 
+from sklearn.model_selection import KFold
 from inception_resnet_v1 import *
 from Utils import *
+from eval_metrics import *
 
 import datas
 
@@ -35,8 +39,10 @@ class DNNTrain(object):
             print('epoch:', epoch)
             gc.collect()
             valid_loss = self.train_epoch(loader['train'], loader['test'])
-            if last_loss >= valid_loss:
-                torch.save(self.network, './SavedModel/test_team.pth')
+            if last_loss > valid_loss:
+                # torch.save(self.network, './SavedModel/triplet.pth')
+                torch.save(self.network.state_dict(), './SavedModel/triplet2.pth')
+                last_loss = valid_loss
             else:
                 continue
 
@@ -82,7 +88,7 @@ class DNNTrain(object):
             self.network.eval()
             labels, distances = [], []
             triplet_loss_sum = 0.0
-            for i, (anc, pos, neg) in enumerate(tqdm(train_loader)):
+            for i, (anc, pos, neg) in enumerate(tqdm(test_loader)):
                 if torch.cuda.is_available():
                     anc, pos, neg = anc.cuda(), pos.cuda(), neg.cuda()
                     self.network.cuda()
@@ -91,7 +97,7 @@ class DNNTrain(object):
                 pos_fea = self.network(pos)
                 neg_fea = self.network(neg)
 
-                loss = criterion(anc_fea, pos_fea, neg_fea)
+                loss = self.criterion(anc_fea, pos_fea, neg_fea)
 
                 dists = self.l2_dist.forward(anc_fea, pos_fea)
                 distances.append(dists.data.cpu().numpy())
@@ -103,7 +109,7 @@ class DNNTrain(object):
                 triplet_loss_sum += loss.item()
 
 
-            avg_triplet_loss = triplet_loss_sum / trainset.__len__()
+            avg_triplet_loss = triplet_loss_sum / testset.__len__()
             labels = np.array([sublabel for label in labels for sublabel in label])
             distances = np.array([subdist for dist in distances for subdist in dist])
             print(labels)
@@ -117,17 +123,7 @@ class DNNTrain(object):
 
 if __name__ == "__main__":
     path = './Data/Team'
-    # transform = transforms.Compose([transforms.Resize(160), transforms.ToTensor()])
-    # data_image = {x:datasets.ImageFolder(root = os.path.join(path,x), transform = transform) for x in ['train', 'test']}
-
-    # index = list(range(len(data_image['train'])))    
-    # random.shuffle(index)           
-    # train_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[2000:]))
-    # valid_loader = torch.utils.data.DataLoader(data_image['train'], batch_size=100, sampler=SubsetRandomSampler(index[:2000]))
-    # test_loader = torch.utils.data.DataLoader(data_image['test'], batch_size=100, shuffle=True)
     
-
-
     transform = transforms.Compose([
     transforms.Resize((160, 160)),
     transforms.ToTensor()])
@@ -140,8 +136,7 @@ if __name__ == "__main__":
     data_loader = {'train': trainloader, 'test': testloader}
 
     model = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=16, dropout_prob=0.6)
-    # model = torch.load('./SavedModel/test.pth')
-    # print(model)
+    model.load_state_dict(torch.load('./SavedModel/triplet2.pth'))
 
     trainer = DNNTrain(model, 1e-4)
-    trainer.train(data_loader, 50)
+    trainer.train(data_loader, 50)\
