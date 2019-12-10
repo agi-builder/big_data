@@ -80,7 +80,7 @@ class DNNTrain(object):
 
 
 if __name__ == "__main__":
-    path = './Data/Team'
+    path = './Data/Images4c'
     transform = transforms.Compose([transforms.Resize(160), transforms.ToTensor()])
     data_image = {x:datasets.ImageFolder(root = os.path.join(path,x), transform = transform) for x in ['train', 'test']}
 
