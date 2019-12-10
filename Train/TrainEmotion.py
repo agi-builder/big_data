@@ -11,7 +11,6 @@ from tqdm import tqdm
 import cv2
 
 from inception_resnet_v1 import *
-from Utils import *
 
 
 class DNNTrain(object):

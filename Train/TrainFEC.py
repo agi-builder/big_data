@@ -14,7 +14,6 @@ import cv2
 
 from sklearn.model_selection import KFold
 from inception_resnet_v1 import *
-from Utils import *
 from eval_metrics import *
 
 import datas
