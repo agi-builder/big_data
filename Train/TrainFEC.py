@@ -11,8 +11,6 @@ from torch.nn.modules.distance import PairwiseDistance
 import gc
 from tqdm import tqdm
 import cv2
-# import time
-# from PIL import Image
 
 from sklearn.model_selection import KFold
 from inception_resnet_v1 import *
@@ -131,7 +129,7 @@ if __name__ == "__main__":
     trainset = datas.fec_data.FecData(transform)
     testset = datas.fec_data.FecTestData(transform)
     trainloader = data.DataLoader(trainset, batch_size=24, num_workers=16)
-    testloader = data.DataLoader(testset, batch_size=30, num_workers=16)
+    testloader = data.DataLoader(testset, batch_size=24, num_workers=16)
 
     data_loader = {'train': trainloader, 'test': testloader}
 
