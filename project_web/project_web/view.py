@@ -65,7 +65,7 @@ class Inference(object):
                             target[predict_lable]+': '+str(int(100*prediction[predict_lable]))+'%', 
                             (int(boxes[0][0]),int(boxes[0][1]-3)), 
                             cv2.FONT_HERSHEY_COMPLEX, 
-                            1, 
+                            0.5, 
                             (0,0,255), 
                             2)
         return frame
