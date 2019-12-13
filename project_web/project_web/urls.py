@@ -24,6 +24,7 @@ urlpatterns = [
     path('recommend', view.recommend),
     path('getRecommend', view.getRecommend),
     path('dealImage', view.dealImage),
+    re_path(r'^goUpdate/$',view.goUpdate, name='goUpdate'),
     re_path(r'^goData/$',view.goData, name='goData')
 
 ]

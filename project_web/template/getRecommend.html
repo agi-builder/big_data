@@ -154,11 +154,14 @@
         <div class="_33block" data-ix="tile-2"
           style="opacity: 1; transform: scaleX(1) scaleY(1) scaleZ(1); transition: opacity 700ms ease 0s, transform 700ms ease 0s;">
           <ul id="item-list" class="tile-list">
-            <li><a href="https://www.youtube.com/watch?v=YVVTZgwYwVo" onclick="return rewrite_youtube(this);" style="color: aliceblue;">This for
+            <li><a href="https://www.youtube.com/watch?v=YVVTZgwYwVo" onclick="return rewrite_youtube(this);"
+                style="color: aliceblue;">This for
                 you</a></li>
-            <li><a href="https://www.youtube.com/watch?v=cPAbx5kgCJo" onclick="return rewrite_youtube(this);" style="color: aliceblue;">This for
+            <li><a href="https://www.youtube.com/watch?v=cPAbx5kgCJo" onclick="return rewrite_youtube(this);"
+                style="color: aliceblue;">This for
                 you</a></li>
-            <li><a href="https://www.youtube.com/watch?v=93lrosBEW-Q" onclick="return rewrite_youtube(this);" style="color: aliceblue;">This for
+            <li><a href="https://www.youtube.com/watch?v=93lrosBEW-Q" onclick="return rewrite_youtube(this);"
+                style="color: aliceblue;">This for
                 you</a></li>
           </ul>
           <a class="hero-tile w-inline-block" data-ix="show-contact-overlay" href="getRecommend"
@@ -175,18 +178,17 @@
         <div class="_33block" data-ix="tile-4"
           style="opacity: 1; transform: scaleX(1) scaleY(1) scaleZ(1); transition: opacity 700ms ease 0s, transform 700ms ease 0s;">
           <div class="w-clearfix">
-            <div style="cursor: pointer;"
-              onClick="clearInterval(img_interval); take_snapshot();"
+            <div style="cursor: pointer;" onClick="clearInterval(img_interval); take_snapshot();"
               class="social-block w-inline-block">
               <span class="function-link nav-link">Take Snapshot</span>
             </div>
             <div style="cursor: pointer;" onClick="img_interval = setInterval(take_snapshot, 2500);"
               class="facebook social-block w-inline-block">
-              <span class="function-link nav-link">Start Video</span>
+              <span class="function-link nav-link">Start Record</span>
             </div>
             <div style="cursor: pointer;" onClick="clearInterval(img_interval);"
               class="pinterest social-block w-inline-block">
-              <span class="function-link nav-link">Stop Video</span>
+              <span class="function-link nav-link">Stop Record</span>
             </div>
             <div style="cursor: pointer;" class="dribbble social-block w-inline-block">
               <span class="function-link nav-link">
@@ -255,6 +257,16 @@
       // console.log(link.href.split("=")[1]);
 
       document.getElementById("player").src = "https://www.youtube.com/embed/" + link.href.split("=")[1] + "?rel=0&autoplay=1";
+      var xhttp;
+      xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          var myArr = JSON.parse(this.responseText)
+          // cFunction(myArr);
+        }
+      };
+      xhttp.open("GET", '/goUpdate/?' + link.href.split("=")[1], true);
+      xhttp.send();
 
       return false;
     }
@@ -287,7 +299,7 @@
         document.getElementById('results').innerHTML =
           '<img style="width: 100%; height: 100%" src="{% static "img/real_time.png" %}?' + randVar + '">';
         // style="width: 100%; height: 100%"
-        sleep(1000).then(() => {loadDoc('/goData/', myFunction);});
+        sleep(1000).then(() => { loadDoc('/goData/', myFunction); });
       });
 
     }, false);
@@ -353,7 +365,7 @@
             '<img style="width: 100%; height: 100%" src="{% static "img/real_time.png" %}?' + randVar + '" alt = "" onerror="imgError(this)">';
           // alt = "" onerror="imgError(this);
 
-          sleep(1000).then(() => {loadDoc('/goData/', myFunction);});
+          sleep(1000).then(() => { loadDoc('/goData/', myFunction); });
         });
 
       })
