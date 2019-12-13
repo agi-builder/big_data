@@ -33,7 +33,26 @@ from pyspark.sql.types import StructType, StructField, IntegerType
 from pyspark.sql.functions import col
 from pyspark.sql import SparkSession
 
+import urllib.request
+import urllib
 
+def get_title(VideoID):
+    # APIKEY = 'AIzaSyAsXAqlyERs0eRcsk8NI-NghBIRRbLv4Bo'
+    APIKEY = 'AIzaSyAD21yOMqYXLvteKE0gusHoVTKbMFFaD1c'
+
+    params = {'id': VideoID, 'key': APIKEY,
+            'fields': 'items(id,snippet(channelId,title,categoryId),statistics)',
+            'part': 'snippet,statistics'}
+
+    url = 'https://www.googleapis.com/youtube/v3/videos'
+
+    query_string = urllib.parse.urlencode(params)
+    url = url + "?" + query_string
+
+    with urllib.request.urlopen(url) as response:
+        response_text = response.read()
+        data = json.loads(response_text.decode())
+        return data['items'][0]['snippet']['title']
 
 def CollaborativeFiltering(ratings_path='./static/img/ratings.csv',num_to_recommend=3,subset_users=3):
     """
@@ -127,7 +146,7 @@ class Inference(object):
                             target[predict_lable]+': '+str(int(100*prediction[predict_lable]))+'%',
                             (int(boxes[0][0]),int(boxes[0][1]-3)),
                             cv2.FONT_HERSHEY_COMPLEX,
-                            1,
+                            0.5,
                             (0,0,255),
                             2)
         return frame
@@ -179,11 +198,9 @@ def recognize(threshold = 0.5):
 def FEC():
     model = models.densenet121(pretrained=True)
     model.classifier = nn.Linear(model.classifier.in_features, 16)
-    model.load_state_dict(torch.load("triplet_dense.pth",map_location=torch.device("cpu")))
+    model.load_state_dict(torch.load("./static/SavedModel/triplet_dense.pth",map_location=torch.device("cpu")))
     pic = "./static/img/real_time.png"
     return model.forward(preprocess(pic)).detach().numpy()[0].squeeze()
-
-
 
 ############################################################
 
@@ -251,7 +268,8 @@ def goUpdate(request):
 
 emotions = ['Angry', 'Happy', 'Neutral', 'Confused']
 search_url = 'https://www.googleapis.com/youtube/v3/search'
-DEVELOPER_KEY = 'AIzaSyAsXAqlyERs0eRcsk8NI-NghBIRRbLv4Bo'
+# DEVELOPER_KEY = 'AIzaSyAsXAqlyERs0eRcsk8NI-NghBIRRbLv4Bo'
+DEVELOPER_KEY = 'AIzaSyAD21yOMqYXLvteKE0gusHoVTKbMFFaD1c'
 @csrf_exempt
 def goData(request):
     global emotion_label
@@ -289,21 +307,30 @@ def goData(request):
     }
 
     print('user:',portfolio.user)
-    id = CFTable.filter(CFTable['user'] == portfolio.user).select('recommendations').collect()
+
+    id = CFTable.filter(CFTable['user'] == str(portfolio.user)).select('recommendations').collect()
+    # id = CFTable.filter(CFTable['user'] == str(3)).select('recommendations').collect()
     print(id)
-    for row in id:
-        print('recommendations:')
-        print(id[row]['recommendations'][0][0])
+    item_id = []
+    for row in range(len(id)):
+        i = 0
+        while True:
+            try:
+                item_id.append(id[row]['recommendations'][i][0])
+                i+=1
+            except:
+                break
 
+    with open("./static/img/items.json", "r") as f:
+        items = json.load(f)
 
-    # with open("./static/img/items.json", "r") as f:
-    #     item = json.load(f)
+    target_url = []
+    for url in items:
+        if items[url] in item_id:
+            print('title:', get_title(url))
+            target_url.append({'Name': get_title(url), 'URL': 'https://www.youtube.com/watch?v=' + url})
 
-    # for url in items:
-    #     if items[url] == id:
-    #         target_url = url
-
-    # print(target_url)
+    print(target_url)
 
     r = requests.get(search_url, params=search_params)
     try:
@@ -313,13 +340,17 @@ def goData(request):
         for search_result in results:
             videos.append({'Name': search_result['snippet']['title'], 'URL': 'https://www.youtube.com/watch?v=' + search_result['id']['videoId']})
 
+
+
         print("Video No: ", len(videos))
         if len(videos) != 0:
-            links = np.random.choice(videos, 6)
+            links = np.random.choice(videos, 6-len(target_url))
+
+        target_url.extend(links)
     except:
         pass
 
-    return JsonResponse(list(links), safe=False)
+    return JsonResponse(list(target_url), safe=False)
 
 @csrf_exempt
 def dealImage(request):

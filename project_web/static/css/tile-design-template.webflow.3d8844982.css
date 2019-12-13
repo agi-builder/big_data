@@ -280,7 +280,7 @@ blockquote {
 .tile-list {
   position: absolute;
   left: 25px;
-  bottom: 100px;
+  bottom: 90px;
   z-index: 20;
   color: #fff;
   font-size: 15px;
