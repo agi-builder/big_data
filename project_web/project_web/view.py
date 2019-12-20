@@ -36,6 +36,23 @@ from pyspark.sql import SparkSession
 import urllib.request
 import urllib
 
+from google.cloud import bigquery, storage
+
+def storeBucket(name,path):
+    bucket_name = "dataproc-fd9fb6e9-a8af-42d8-84df-f465b946566c-us-central1"
+    storage_client = storage.Client.from_service_account_json(
+            './static/img/credentials.json')
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = storage.Blob(name, bucket)
+    blob.upload_from_filename(path)
+def queryBQ(query):
+    client = bigquery.Client.from_service_account_json('./static/img/credentials.json')
+    res = list(client.query(query).result())
+    if len(res) == 0:
+        return -1
+    else:
+        return res
+
 def get_title(VideoID):
     # APIKEY = 'AIzaSyAsXAqlyERs0eRcsk8NI-NghBIRRbLv4Bo'
     APIKEY = 'AIzaSyAD21yOMqYXLvteKE0gusHoVTKbMFFaD1c'
